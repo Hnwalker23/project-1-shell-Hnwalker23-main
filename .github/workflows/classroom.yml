@@ -1,0 +1,40 @@
+name: Autograding Tests
+'on':
+- push
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Build Shell
+      id: build-shell
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Build Shell
+        setup-command: ''
+        command: make
+        timeout: 1
+        max-score: 0
+    - name: Phase 1 - Basic Commands
+      id: phase-1-basic-commands
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Phase 1 - Basic Commands
+        setup-command: ''
+        command: chmod +x test_phase1.sh && make
+        timeout: 2
+        max-score: 25
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        BUILD-SHELL_RESULTS: "${{steps.build-shell.outputs.result}}"
+        PHASE-1-BASIC-COMMANDS_RESULTS: "${{steps.phase-1-basic-commands.outputs.result}}"
+      with:
+        runners: build-shell,phase-1-basic-commands
