@@ -16,7 +16,7 @@
 #include <fcntl.h>
 #include <signal.h>
 
-//test comment
+//test comments
 
 using namespace std;
 
