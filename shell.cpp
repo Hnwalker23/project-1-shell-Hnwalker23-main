@@ -2,8 +2,8 @@
  * Simple Shell Implementation
  * Operating Systems - Project 1
  * 
- * Student Name: [YOUR NAME]
- * Student ID: [YOUR ID]
+ * Student Name: [Hali Walker]
+ * Student ID: [950554578]
  */
 
 #include <iostream>
@@ -16,7 +16,7 @@
 #include <fcntl.h>
 #include <signal.h>
 
-//test comments
+
 
 using namespace std;
 
@@ -89,14 +89,24 @@ int main() {
  * - Or use string::find() and string::substr()
  * - Handle multiple spaces between tokens
  * 
- * AI ASSISTANCE: [Document any AI help here]
+ * AI ASSISTANCE: Used ChatGPT to further understan background information on stringstream,
+ * including its purpose, typical usage, and why it is suitable for parsing 
+ * space-separated tokens from a string. Applied this knowledge to implement 
+ * command parsing in this function.
  */
 vector<string> parseCommand(const string& input) {
     vector<string> tokens;
     
     // TODO: Implement parsing
     // YOUR CODE HERE
-    
+
+    stringstream ss(input); // Create string stream from input
+    string token; 
+
+    while (ss >>  token) { // Extract tokens separated by whitespace
+        tokens.push_back(token);
+    }
+
     return tokens;
 }
 
@@ -109,7 +119,9 @@ vector<string> parseCommand(const string& input) {
 bool isBuiltIn(const string& cmd) {
     // TODO: Implement built-in check
     // YOUR CODE HERE
-    
+    if  (cmd == "exit" || cmd == "cd") {
+         return true;
+    }
     return false;
 }
 
@@ -124,11 +136,29 @@ bool isBuiltIn(const string& cmd) {
  * - Use chdir() and check return value for errors
  * - For exit: just call exit(0)
  * 
- * AI ASSISTANCE: [Document any AI help here]
+ * AI ASSISTANCE: Used AI to better understand the background and purpose of the chdir() system call 
+ *   (how it changes the process's directory and what errors can occur)
+ * - Received debugging advice on using getenv() implementation for HOME directory resolution,
  */
 void executeBuiltIn(const vector<string>& args) {
     // TODO: Implement built-in commands
     // YOUR CODE HERE
+
+    string command = args[0]; //Separate command from the path
+    if (command == "exit") {
+        exit(0);
+    } else if (command == "cd") { //chnge directory
+        const char* path;
+        if (args.size() > 1) { //if path is provided
+             path = args[1].c_str(); //convert to C-style string
+        } else { //no path provided, go to HOME
+           
+            path = getenv("HOME"); 
+        }
+        if (chdir(path) !=  0) { //change directory and check for errors
+             perror("cd failed");
+        }
+    }
 }
 
 /**
@@ -147,11 +177,43 @@ void executeBuiltIn(const vector<string>& args) {
  * - execvp()
  * - waitpid()
  * 
- * AI ASSISTANCE: [Document any AI help here]
+ * AI ASSISTANCE: ChatGPT provided background on fork, execvp, and waitpid
+ * - Debugging issues:
+ *     * Initially, the shell returned immediately to the prompt ('myshell>') without actually running commands
+ *     * Passing C++ string objects directly to execvp caused errors and I didn’t understand why and learned it needed to convert to a C-style strings using c_str()
+ *     * Child processes weren’t being created until the argument array ended with a nullptr
  */
 void executeCommand(const vector<string>& args) {
     // TODO: Implement fork/exec
     // YOUR CODE HERE
+
+    pid_t pid = fork();
+    if  (pid < 0) {
+        perror("Fork failed");
+         return;
+    }
+     if (pid == 0) {
+         // Allocate array
+        char** argv = new char*[args.size() + 1]; // +1 for nullptr termination
+
+        // Convert vector<string> to char* array
+        for (size_t i = 0; i < args.size(); i++) {
+            argv[i] = const_cast<char*>(args[i].c_str());
+        }
+        argv[args.size()] = nullptr; // Must end with nullptr
+
+        // Execute the command
+        execvp(argv[0], argv);
+
+        // If execvp returns, there was an error
+        perror("Command not found");
+        exit(1); // terminate the  child
+    } else {
+        // Parent process - wait for child to finish
+        int status;
+        waitpid(pid, &status, 0); 
+    }
+
 }
 
 /**
