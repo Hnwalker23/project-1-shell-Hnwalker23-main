@@ -6,8 +6,7 @@
  * Student ID: [950554578]
  */
 
- //testing commits - 2/5 
- //part 2 2/5
+ //uploading current code .
 
 #include <iostream>
 #include <string>
@@ -314,11 +313,14 @@ void executePipedCommands(const vector<string>& args) {
         if (!foundPipe) {
             args_before_pipe.push_back(arg);
         } else {
+
             args_after_pipe.push_back(arg);
         }
     }
+    //testing here 
     
     // Create pipe
+    
     int pipefd[2];
     pipe(pipefd);
 
