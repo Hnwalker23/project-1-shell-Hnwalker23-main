@@ -6,7 +6,8 @@
  * Student ID: [950554578]
  */
 
- //testing commits - 2/5
+ //testing commits - 2/5 
+ //part 2 2/5
 
 #include <iostream>
 #include <string>
@@ -227,8 +228,14 @@ void executeCommand(const vector<string>& args) {
 bool hasPipe(const vector<string>& args) {
     // TODO: Check for pipe symbol
     // YOUR CODE HERE
+    for (string arg : args) {
+        if (arg == "|") {
+            return true;
+        }
+    }
     
-    return false;
+        return false;
+    
 }
 
 /**
@@ -240,8 +247,14 @@ bool hasPipe(const vector<string>& args) {
 bool hasRedirection(const vector<string>& args) {
     // TODO: Check for redirection symbols
     // YOUR CODE HERE
+    for (string arg : args) {
+        if (arg == ">" || arg == "<" || arg == ">>") {
+            return true;
+        }
+    }
     
-    return false;
+        return false;
+    
 }
 
 /**
@@ -253,8 +266,14 @@ bool hasRedirection(const vector<string>& args) {
 bool hasBackground(const vector<string>& args) {
     // TODO: Check for & symbol
     // YOUR CODE HERE
+    for (string arg : args) {
+        if (arg == "&") {
+            return true;
+        }
+    }
     
-    return false;
+        return false;
+    
 }
 
 /**
@@ -282,7 +301,68 @@ bool hasBackground(const vector<string>& args) {
 void executePipedCommands(const vector<string>& args) {
     // TODO: Implement piping
     // YOUR CODE HERE
+
+    //spliy args at pipe symbol
+    vector<string> args_before_pipe;
+    vector<string> args_after_pipe;
+    bool foundPipe = false;
+    for ( string arg : args) {
+        if (arg == "|") {
+            foundPipe = true;
+            continue;
+        }
+        if (!foundPipe) {
+            args_before_pipe.push_back(arg);
+        } else {
+            args_after_pipe.push_back(arg);
+        }
+    }
+    
+    // Create pipe
+    int pipefd[2];
+    pipe(pipefd);
+
+    // Fork first command
+    pid_t pid1 = fork();
+    if (pid1 == 0) {
+        // Child process for first command
+        dup2(pipefd[1], STDOUT_FILENO); // Redirect stdout to pipe write
+        close(pipefd[0]); // Close unused read end
+        close(pipefd[1]); // Close original write end
+        // Execute first command
+        char** argv1 = new char*[args_before_pipe.size() + 1];
+        for (size_t i = 0; i < args_before_pipe.size(); i++)
+            argv1[i] = const_cast<char*>(args_before_pipe[i].c_str());
+        argv1[args_before_pipe.size()] = nullptr;
+        execvp(argv1[0], argv1);
+        perror("First command failed");
+        exit(1);
 }
+    // Fork second command
+    pid_t pid2 = fork();
+    if (pid2 == 0) {
+        // Child process for second command
+        dup2(pipefd[0], STDIN_FILENO); // Redirect stdin to pipe read
+        close(pipefd[1]); // Close unused write end
+        close(pipefd[0]); // Close original read end
+        // Execute second command
+        char** argv2 = new char*[args_after_pipe.size() + 1];
+        for (size_t i = 0; i < args_after_pipe.size(); i++)
+            argv2[i] = const_cast<char*>(args_after_pipe[i].c_str());
+        argv2[args_after_pipe.size()] = nullptr;
+        execvp(argv2[0], argv2);
+        perror("Second command failed");
+        exit(1);
+    }
+
+    // Parent process
+    close(pipefd[0]);
+    close(pipefd[1]);
+    waitpid(pid1, nullptr, 0);
+    waitpid(pid2, nullptr, 0);
+}
+
+
 
 /**
  * PHASE 2 - FINAL REQUIRED
@@ -312,6 +392,30 @@ void executePipedCommands(const vector<string>& args) {
 void executeWithRedirection(const vector<string>& args) {
     // TODO: Implement redirection and background execution
     // YOUR CODE HERE
+
+    vector<string> cmd_args;
+    string input_file;
+    string output_file;
+    bool append = false;
+    bool background = false;
+    // Parse arguments
+    for (size_t i = 0; i < args.size(); i++) {
+        if (args[i] == "<" && i + 1 < args.size()) {
+            input_file = args[i + 1];
+            i++;
+        } else if (args[i] == ">" && i + 1 < args.size()) {
+            output_file = args[i + 1];
+            i++;
+        } else if (args[i] == ">>" && i + 1 < args.size()) {
+            output_file = args[i + 1];
+            append = true;
+            i++;
+        } else if (args[i] == "&") {
+            background = true;
+        } else {
+            cmd_args.push_back(args[i]);
+        }
+
 }
 
 /**
